@@ -20,17 +20,27 @@ class ModelSynth extends Synth {
             throw new \Exception('Can\'t set model as property if it hasn\'t been persisted yet');
         }
 
+        // If no alias is found, this just returns the class name
+        $alias = $target->getMorphClass();
+        
         $serializedModel = (array) $this->getSerializedPropertyValue($target);
 
         return [
             null,
-            ['class' => $serializedModel['class'], 'key' => $serializedModel['id']],
+            ['class' => $alias, 'key' => $serializedModel['id']],
         ];
     }
 
     function hydrate($data, $meta) {
         $key = $meta['key'];
         $class = $meta['class'];
+
+        // If no alias found, this returns `null`
+        $aliasClass = Relation::getMorphedModel($class);
+
+        if (! is_null($aliasClass)) {
+            $class = $aliasClass;
+        }
 
         $model = (new $class)->newQueryForRestoration($key)->useWritePdo()->firstOrFail();
 
